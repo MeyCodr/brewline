@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(STAFF)
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+  KITCHEN
+}
+
+model Category {
+  id        String     @id @default(cuid())
+  name      String
+  icon      String
+  sortOrder Int        @default(0)
+  items     MenuItem[]
+  createdAt DateTime   @default(now())
+
+  @@map("categories")
+}
+
+model MenuItem {
+  id          String      @id @default(cuid())
+  name        String
+  description String      @db.Text
+  price       Decimal     @db.Decimal(10, 2)
+  imageUrl    String?
+  categoryId  String
+  category    Category    @relation(fields: [categoryId], references: [id])
+  featured    Boolean     @default(false)
+  available   Boolean     @default(true)
+  sortOrder   Int         @default(0)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  orderItems  OrderItem[]
+
+  @@map("menu_items")
+}
+
+model Table {
+  id        String      @id @default(cuid())
+  number    Int         @unique
+  seats     Int
+  status    TableStatus @default(AVAILABLE)
+  orders    Order[]
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@map("tables")
+}
+
+enum TableStatus {
+  AVAILABLE
+  OCCUPIED
+  CLEANING
+  RESERVED
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  number     String      @unique
+  tableId    String
+  table      Table       @relation(fields: [tableId], references: [id])
+  status     OrderStatus @default(PENDING)
+  note       String?     @db.Text
+  total      Decimal     @db.Decimal(10, 2)
+  items      OrderItem[]
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+enum OrderStatus {
+  PENDING
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  quantity   Int
+  unitPrice  Decimal  @db.Decimal(10, 2)
+  modifiers  String?  @db.Text
+  createdAt  DateTime @default(now())
+
+  @@map("order_items")
+}
