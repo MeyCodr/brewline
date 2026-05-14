@@ -25,41 +25,116 @@ interface Props {
 }
 
 function RevenueChart({ data }: { data: { day: string; value: number }[] }) {
-  const w = 560, h = 200, p = 24;
+  const [hovered, setHovered] = useState<number | null>(null);
+
+  const w = 560, h = 215;
+  const pt = 12, pb = 28, pl = 54, pr = 12;
+  const chartW = w - pl - pr;
+  const chartH = h - pt - pb;
+
   if (data.length === 0) {
     return (
-      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: 200 }}>
+      <svg viewBox={`0 0 ${w} ${h}`} style={{ width: '100%', height: h }}>
         <text x={w / 2} y={h / 2} textAnchor="middle" fontSize="13" fill="var(--muted)" fontFamily="Inter">No data yet</text>
       </svg>
     );
   }
-  const max = Math.max(...data.map(d => d.value), 1);
+
+  const max  = Math.max(...data.map(d => d.value), 1);
   const span = Math.max(data.length - 1, 1);
-  const x = (i: number) => p + (i * (w - p * 2)) / span;
-  const y = (v: number) => h - p - ((v / max) * (h - p * 2));
-  const linePath = data.map((d, i) => (i === 0 ? 'M' : 'L') + x(i) + ' ' + y(d.value)).join(' ');
-  const areaPath = linePath + ` L ${x(data.length - 1)} ${h - p} L ${x(0)} ${h - p} Z`;
+  const xp   = (i: number) => pl + (i * chartW) / span;
+  const yp   = (v: number) => pt + chartH - (v / max) * chartH;
+
+  const linePath = data.map((d, i) => `${i === 0 ? 'M' : 'L'}${xp(i).toFixed(1)} ${yp(d.value).toFixed(1)}`).join(' ');
+  const areaPath = `${linePath} L${xp(data.length - 1).toFixed(1)} ${(pt + chartH).toFixed(1)} L${xp(0).toFixed(1)} ${(pt + chartH).toFixed(1)} Z`;
+
+  // Always show ~6 x-axis labels regardless of data length
+  const labelStep = data.length <= 7 ? 1 : Math.ceil(data.length / 6);
+  const showDots  = data.length <= 7;
+
+  // Hover tooltip geometry
+  const hd = hovered !== null ? data[hovered] : null;
+  const hx = hovered !== null ? xp(hovered) : 0;
+  const hy = hovered !== null ? yp(data[hovered].value) : 0;
+  const TW = 96, TH = 38;
+  const tx = Math.min(Math.max(hx - TW / 2, pl), w - pr - TW);
+  const ty = Math.max(hy - TH - 10, pt);
+
+  const fmtY = (v: number) => v >= 1000 ? `$${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k` : `$${Math.round(v)}`;
 
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: '100%', height: 200 }}>
+    <svg viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none" style={{ width: '100%', height: h }}>
       <defs>
         <linearGradient id="rev-grad" x1="0" x2="0" y1="0" y2="1">
-          <stop offset="0%" stopColor="var(--brand-1)" stopOpacity="0.35" />
+          <stop offset="0%"   stopColor="var(--brand-1)" stopOpacity="0.28" />
           <stop offset="100%" stopColor="var(--brand-1)" stopOpacity="0" />
         </linearGradient>
       </defs>
-      {[0.25, 0.5, 0.75].map((f, i) => (
-        <line key={i} x1={p} x2={w - p} y1={p + (h - p * 2) * f} y2={p + (h - p * 2) * f}
-          stroke="var(--border)" strokeDasharray="3 4" />
-      ))}
+
+      {/* Y-axis grid + labels */}
+      {[0.25, 0.5, 0.75, 1].map((f, i) => {
+        const yv = pt + chartH - f * chartH;
+        return (
+          <g key={i}>
+            <line x1={pl} x2={w - pr} y1={yv} y2={yv} stroke="var(--border)" strokeDasharray="3 4" />
+            <text x={pl - 6} y={yv + 4} textAnchor="end" fontSize="10" fill="var(--muted)" fontFamily="Inter">
+              {fmtY(max * f)}
+            </text>
+          </g>
+        );
+      })}
+
+      {/* Area fill + line */}
       <path d={areaPath} fill="url(#rev-grad)" />
-      <path d={linePath} fill="none" stroke="var(--brand-1)" strokeWidth="2.5" strokeLinejoin="round" strokeLinecap="round" />
-      {data.map((d, i) => (
-        <g key={i}>
-          <circle cx={x(i)} cy={y(d.value)} r="3.5" fill="#fff" stroke="var(--brand-1)" strokeWidth="2" />
-          <text x={x(i)} y={h - 6} textAnchor="middle" fontSize="11" fill="var(--muted)" fontFamily="Inter">{d.day}</text>
-        </g>
-      ))}
+      <path d={linePath} fill="none" stroke="var(--brand-1)"
+        strokeWidth={showDots ? 2.5 : 2} strokeLinejoin="round" strokeLinecap="round" />
+
+      {/* X labels + dots */}
+      {data.map((d, i) => {
+        const showLabel = i % labelStep === 0 || i === data.length - 1;
+        return (
+          <g key={i}>
+            {showDots && (
+              <circle cx={xp(i)} cy={yp(d.value)} r="3.5" fill="#fff" stroke="var(--brand-1)" strokeWidth="2" />
+            )}
+            {showLabel && (
+              <text x={xp(i)} y={h - 6} textAnchor="middle" fontSize="10.5" fill="var(--muted)" fontFamily="Inter">
+                {d.day}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* Hover cursor + dot */}
+      {hovered !== null && (
+        <>
+          <line x1={hx} x2={hx} y1={pt} y2={pt + chartH}
+            stroke="var(--brand-1)" strokeWidth="1" strokeDasharray="4 3" opacity="0.5" />
+          <circle cx={hx} cy={hy} r="4.5" fill="var(--brand-1)" stroke="#fff" strokeWidth="2" />
+          <rect x={tx} y={ty} width={TW} height={TH} rx="7" fill="#1c1917" opacity="0.93" />
+          <text x={tx + TW / 2} y={ty + 13} textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.55)" fontFamily="Inter">
+            {hd?.day}
+          </text>
+          <text x={tx + TW / 2} y={ty + 28} textAnchor="middle" fontSize="13" fontWeight="600" fill="#fff" fontFamily="Inter">
+            {hd ? formatCurrency(hd.value) : ''}
+          </text>
+        </>
+      )}
+
+      {/* Invisible hit-areas for hover */}
+      {data.map((_, i) => {
+        const segW = chartW / span;
+        const rx   = i === 0 ? pl : xp(i) - segW / 2;
+        const rw   = i === 0 || i === data.length - 1 ? segW / 2 : segW;
+        return (
+          <rect key={i} x={rx} y={pt} width={rw} height={chartH} fill="transparent"
+            style={{ cursor: 'crosshair' }}
+            onMouseEnter={() => setHovered(i)}
+            onMouseLeave={() => setHovered(null)}
+          />
+        );
+      })}
     </svg>
   );
 }
@@ -276,50 +351,6 @@ export function DashboardClient({ userName, stats, topSellers, revenue7d, revenu
           </div>
         </Card>
 
-        {/* On the floor */}
-        <Card>
-          <CardHeader>
-            <div>
-              <CardTitle>On the floor</CardTitle>
-              <CardSub>Live status</CardSub>
-            </div>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse-dot" style={{ boxShadow: '0 0 0 4px rgba(16,185,129,0.18)' }} />
-          </CardHeader>
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            {[
-              { num: stats.pending, label: 'In prep', color: 'var(--amber-600, #d97706)' },
-              { num: stats.ready, label: 'Ready', color: 'var(--emerald-600, #059669)' },
-              { num: '4:12', label: 'Avg prep', color: 'var(--text)' },
-            ].map((s, i) => (
-              <div key={i} className="rounded-xl p-3.5 text-center" style={{ background: 'var(--canvas-2)' }}>
-                <div className="text-[24px] font-medium leading-none" style={{ fontFamily: 'var(--font-fraunces)', color: s.color }}>{s.num}</div>
-                <div className="text-[11px] font-medium mt-1" style={{ color: 'var(--muted)' }}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-          <div className="flex flex-col gap-2.5">
-            {[
-              { name: 'Maya Chen',    role: 'Barista · Bar 1', avatar: 'MC', status: 'on' },
-              { name: 'Tomás Vidal',  role: 'Kitchen · Lead',  avatar: 'TV', status: 'on' },
-              { name: 'Ren Park',     role: 'Floor',           avatar: 'RP', status: 'on' },
-              { name: 'Aisha Bello',  role: 'Barista · Bar 2', avatar: 'AB', status: 'break' },
-            ].map((s, i) => (
-              <div key={i} className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold flex-shrink-0"
-                  style={{ background: 'var(--canvas-2)', color: '#57534e' }}>
-                  {s.avatar}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[13px] font-semibold">{s.name}</div>
-                  <div className="text-[11px]" style={{ color: 'var(--muted)' }}>{s.role}</div>
-                </div>
-                <span className={`text-[10.5px] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wide ${s.status === 'on' ? 'bg-emerald-50 text-emerald-700' : 'bg-stone-100 text-stone-500'}`}>
-                  {s.status === 'on' ? 'On shift' : 'Break'}
-                </span>
-              </div>
-            ))}
-          </div>
-        </Card>
       </div>
     </div>
   );

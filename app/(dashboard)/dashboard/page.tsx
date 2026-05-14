@@ -70,7 +70,7 @@ export default async function DashboardPage() {
           avgTicket: orders.length ? totalRevenue / orders.length : 0,
           tablesOccupied: tables.filter(t => t.status === 'OCCUPIED').length,
           tablesTotal: tables.length,
-          pending: orders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING').length,
+          pending: orders.filter(o => o.status === 'PREPARING').length,
           ready: orders.filter(o => o.status === 'READY').length,
         }}
         topSellers={topSellers}

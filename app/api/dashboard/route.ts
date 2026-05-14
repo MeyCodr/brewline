@@ -27,7 +27,7 @@ export async function GET() {
 
   const totalRevenue = orders.reduce((s, o) => s + Number(o.total), 0);
   const avgTicket = orders.length ? totalRevenue / orders.length : 0;
-  const pending = orders.filter(o => o.status === 'PENDING' || o.status === 'PREPARING').length;
+  const pending = orders.filter(o => o.status === 'PREPARING').length;
   const ready = orders.filter(o => o.status === 'READY').length;
 
   const topItemIds = topItems.map(t => t.menuItemId);

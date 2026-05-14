@@ -9,13 +9,13 @@ export default async function DashboardLayout({ children }: { children: React.Re
   if (!session) redirect('/login');
 
   const pendingCount = await db.order.count({
-    where: { status: { in: ['PENDING', 'PREPARING'] } },
+    where: { status: { in: ['PREPARING', 'READY'] } },
   });
 
   return (
     <SessionProvider>
       <div className="flex min-h-screen" style={{ background: 'var(--canvas)' }}>
-        <Sidebar pendingCount={pendingCount} />
+        <Sidebar pendingCount={pendingCount} userRole={(session.user as { role?: string }).role} />
         <main className="flex-1 min-w-0 flex flex-col">{children}</main>
       </div>
     </SessionProvider>

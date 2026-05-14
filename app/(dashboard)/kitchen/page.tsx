@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 export default async function KitchenPage() {
   const orders = await db.order.findMany({
-    where: { status: { in: ['PENDING', 'PREPARING', 'READY'] } },
+    where: { status: { in: ['PREPARING', 'READY'] } },
     include: {
       table: { select: { number: true } },
       items: { include: { menuItem: { select: { name: true } } } },
@@ -19,7 +19,7 @@ export default async function KitchenPage() {
     id: o.id,
     number: o.number,
     tableNumber: o.table.number,
-    status: o.status as 'PENDING' | 'PREPARING' | 'READY',
+    status: o.status as 'PREPARING' | 'READY',
     note: o.note ?? null,
     placedAt: Math.floor((Date.now() - o.createdAt.getTime()) / 60000),
     items: o.items.map(i => ({

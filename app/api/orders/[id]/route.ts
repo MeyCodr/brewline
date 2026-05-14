@@ -4,7 +4,6 @@ import { db } from '@/lib/db';
 import { z } from 'zod';
 
 const STATUS_FLOW: Record<string, string | null> = {
-  PENDING:   'PREPARING',
   PREPARING: 'READY',
   READY:     'COMPLETED',
   COMPLETED: null,
@@ -50,7 +49,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (parsed.data.status) {
     const allowed = STATUS_FLOW[existing.status];
     const canCancel = parsed.data.status === 'CANCELLED' &&
-      (existing.status === 'PENDING' || existing.status === 'PREPARING');
+      existing.status === 'PREPARING';
     if (parsed.data.status !== allowed && !canCancel) {
       return NextResponse.json({ error: `Cannot transition from ${existing.status} to ${parsed.data.status}` }, { status: 422 });
     }
@@ -76,8 +75,8 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const order = await db.order.findUnique({ where: { id } });
   if (!order) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  if (order.status !== 'PENDING') {
-    return NextResponse.json({ error: 'Only pending orders can be deleted' }, { status: 422 });
+  if (order.status !== 'PREPARING') {
+    return NextResponse.json({ error: 'Only orders being prepared can be deleted' }, { status: 422 });
   }
 
   await db.order.delete({ where: { id } });

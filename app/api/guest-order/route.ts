@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
       tableId,
       note,
       total,
+      status: 'PREPARING',
       items: {
         create: items.map(i => {
           const mi = menuItems.find(m => m.id === i.menuItemId)!;

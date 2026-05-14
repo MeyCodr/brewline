@@ -7,15 +7,16 @@ import { Logo } from '@/components/ui/Logo';
 import { NavIcon } from '@/components/ui/NavIcon';
 
 const NAV = [
-  { id: 'dashboard', label: 'Dashboard',   desc: 'Today at a glance', icon: 'grid'    as const, href: '/dashboard' },
-  { id: 'orders',    label: 'Orders',       desc: 'Live tickets',      icon: 'receipt' as const, href: '/orders'    },
-  { id: 'menu',      label: 'Menu',         desc: 'Items & pricing',   icon: 'menu'    as const, href: '/menu'      },
-  { id: 'kitchen',   label: 'Kitchen',      desc: 'KDS board',         icon: 'chef'    as const, href: '/kitchen'   },
-  { id: 'tables',    label: 'Tables',       desc: 'Floor & QR codes',  icon: 'table'   as const, href: '/tables'    },
-  { id: 'customer',  label: 'Guest view',   desc: 'QR menu preview',   icon: 'phone'   as const, href: '/menu/01'   },
+  { id: 'dashboard', label: 'Dashboard',   desc: 'Today at a glance', icon: 'grid'    as const, href: '/dashboard', roles: null },
+  { id: 'orders',    label: 'Orders',       desc: 'Live tickets',      icon: 'receipt' as const, href: '/orders',    roles: null },
+  { id: 'menu',      label: 'Menu',         desc: 'Items & pricing',   icon: 'menu'    as const, href: '/menu',      roles: null },
+  { id: 'kitchen',   label: 'Kitchen',      desc: 'KDS board',         icon: 'chef'    as const, href: '/kitchen',   roles: null },
+  { id: 'tables',    label: 'Tables',       desc: 'Floor & QR codes',  icon: 'table'   as const, href: '/tables',    roles: null },
+  { id: 'staff',     label: 'Staff',        desc: 'Team & accounts',   icon: 'people'  as const, href: '/staff',     roles: ['ADMIN', 'MANAGER'] },
+  { id: 'customer',  label: 'Guest view',   desc: 'QR menu preview',   icon: 'phone'   as const, href: '/menu/01',   roles: null },
 ];
 
-export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
+export function Sidebar({ pendingCount = 0, userRole }: { pendingCount?: number; userRole?: string }) {
   const pathname = usePathname();
 
   return (
@@ -47,7 +48,7 @@ export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
 
       {/* Nav items */}
       <nav className="flex flex-col gap-0.5 flex-1">
-        {NAV.map((n) => {
+        {NAV.filter(n => !n.roles || n.roles.includes(userRole ?? '')).map((n) => {
           const active = pathname.startsWith(n.href) && (n.href !== '/dashboard' || pathname === '/dashboard');
           return (
             <Link
@@ -82,26 +83,6 @@ export function Sidebar({ pendingCount = 0 }: { pendingCount?: number }) {
 
       {/* Footer */}
       <div className="flex flex-col gap-2.5 pt-3">
-        <div
-          className="relative h-[130px] rounded-2xl overflow-hidden"
-          style={{
-            backgroundImage: 'url(https://images.unsplash.com/photo-1511920170033-f8396924c348?w=600&q=80)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            boxShadow: 'var(--shadow)',
-          }}
-        >
-          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(28,25,23,0.15) 0%, rgba(28,25,23,0.78) 100%)' }} />
-          <div className="absolute inset-0 p-3.5 flex flex-col justify-end text-white">
-            <div className="text-[10px] uppercase tracking-widest opacity-85">Today&apos;s shift</div>
-            <div className="text-[20px] mt-0.5" style={{ fontFamily: 'var(--font-fraunces)', fontWeight: 500 }}>07:00 — 16:00</div>
-            <div className="text-[11px] opacity-85 mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-green-400 shadow-[0_0_0_3px_rgba(74,222,128,0.25)]" />
-              4 on the floor · 2 on break
-            </div>
-          </div>
-        </div>
-
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="flex items-center gap-2 px-3 py-2.5 rounded-[10px] text-[13px] font-medium transition-colors duration-150 hover:bg-red-50 hover:text-red-600 w-full"

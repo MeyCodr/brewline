@@ -19,7 +19,7 @@ const STATUS_META: Record<OrderStatus, {
   label: string; variant: 'amber' | 'blue' | 'emerald' | 'stone' | 'red';
   next: OrderStatus | null; nextLabel: string; dot: string;
 }> = {
-  PENDING:   { label: 'Pending',   variant: 'amber',   next: 'PREPARING', nextLabel: 'Start preparing', dot: 'bg-amber-400' },
+  PENDING:   { label: 'Preparing', variant: 'blue',    next: 'READY',     nextLabel: 'Mark ready',      dot: 'bg-blue-400' },
   PREPARING: { label: 'Preparing', variant: 'blue',    next: 'READY',     nextLabel: 'Mark ready',      dot: 'bg-blue-400' },
   READY:     { label: 'Ready',     variant: 'emerald', next: 'COMPLETED', nextLabel: 'Mark served',     dot: 'bg-emerald-500' },
   COMPLETED: { label: 'Completed', variant: 'stone',   next: null,        nextLabel: '',                dot: 'bg-stone-300' },
@@ -28,7 +28,6 @@ const STATUS_META: Record<OrderStatus, {
 
 const FILTER_OPTS = [
   { id: 'all', label: 'All' },
-  { id: 'PENDING', label: 'Pending' },
   { id: 'PREPARING', label: 'Preparing' },
   { id: 'READY', label: 'Ready' },
   { id: 'COMPLETED', label: 'Completed' },
@@ -313,7 +312,7 @@ interface ApiOrder {
   items: { id: string; quantity: number; modifiers?: string | null; unitPrice: string | number; menuItem: { name: string } }[];
 }
 
-const POLL_INTERVAL = 15_000;
+const POLL_INTERVAL = 5_000;
 
 export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
   const [orders, setOrders] = useState(initialOrders);
@@ -324,7 +323,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
   const [cancelTarget, setCancelTarget] = useState<string | null>(null);
   const [cancelling, setCancelling] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const activeIdRef = useRef(activeId);
   activeIdRef.current = activeId;
 
@@ -356,7 +355,6 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
 
   const counts: Record<string, number> = {
     all: orders.length,
-    PENDING: orders.filter(o => o.status === 'PENDING').length,
     PREPARING: orders.filter(o => o.status === 'PREPARING').length,
     READY: orders.filter(o => o.status === 'READY').length,
     COMPLETED: orders.filter(o => o.status === 'COMPLETED').length,
@@ -398,7 +396,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
         <div>
           <h2 className="text-[28px] font-semibold tracking-tight m-0" style={{ fontFamily: 'var(--font-fraunces)' }}>Orders</h2>
           <p className="text-[13.5px] mt-1 m-0" style={{ color: 'var(--muted)' }}>
-            {orders.length} today · updated {lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            {orders.length} today{lastUpdated ? ` · updated ${lastUpdated.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
           </p>
         </div>
         <div className="flex gap-2">
@@ -530,7 +528,7 @@ export function OrdersClient({ initialOrders }: { initialOrders: Order[] }) {
                   <NavIcon name="print" size={14} /> Print receipt
                 </Button>
               )}
-              {(active.status === 'PENDING' || active.status === 'PREPARING') && (
+              {active.status === 'PREPARING' && (
                 <button
                   onClick={() => setCancelTarget(active.id)}
                   className="w-full py-2 rounded-[10px] text-[13px] font-semibold text-red-500 border border-red-100 hover:bg-red-50 transition-colors"

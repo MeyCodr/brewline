@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run *)",
+      "Bash(Select-String -Pattern \"\\(package|tsconfig\\)\")",
+      "Bash(xargs grep -l \"order\")",
+      "Bash(node -e ' *)",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({ path: '.env.local' }\\); console.log\\(process.env.DATABASE_URL?.replace\\(/:\\\\/\\\\/[^@]+@/, '://***@'\\)\\)\")",
+      "Bash(npx prisma *)"
+    ]
+  }
+}

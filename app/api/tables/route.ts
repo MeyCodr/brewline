@@ -12,7 +12,7 @@ export async function GET() {
   const tables = await db.table.findMany({
     include: {
       orders: {
-        where: { status: { in: ['PENDING', 'PREPARING', 'READY'] } },
+        where: { status: { in: ['PREPARING', 'READY'] } },
         orderBy: { createdAt: 'desc' },
         take: 1,
       },
